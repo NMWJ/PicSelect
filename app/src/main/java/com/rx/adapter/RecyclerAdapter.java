@@ -93,6 +93,15 @@ public class RecyclerAdapter<T> extends RecyclerView.Adapter<RecyclerAdapter.Vie
             Glide.with(itemView).load(path).into(imageView);
         }
 
+        public void setVisibility(int id,boolean isVisibility){
+            View view = itemView.findViewById(id);
+            if(isVisibility){
+                view.setVisibility(View.VISIBLE);
+            }else {
+                view.setVisibility(View.GONE);
+            }
+        }
+
         public void checked(int id, boolean check, CompoundButton.OnCheckedChangeListener clickListener){
             CheckBox checkBox = itemView.findViewById(id);
             checkBox.setOnCheckedChangeListener(clickListener);
