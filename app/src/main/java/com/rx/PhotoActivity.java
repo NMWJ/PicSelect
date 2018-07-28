@@ -6,12 +6,15 @@ import android.database.Cursor;
 import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.CompoundButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.rx.adapter.RecyclerAdapter;
@@ -38,6 +41,7 @@ public class PhotoActivity extends AppCompatActivity {
     private List<Image> images = new ArrayList<>();
     private RecyclerAdapter<Image> adapter;
     private ListDialogFragment listDialogFragment = new ListDialogFragment();
+    private ArrayList<String> pathList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +50,52 @@ public class PhotoActivity extends AppCompatActivity {
 
         RecyclerView recyclerView = findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new GridLayoutManager(this, 3));
+        recyclerView.setItemAnimator(new DefaultItemAnimator());
+
+        final TextView textView = findViewById(R.id.submitPhoto);
+
+        final Intent intent = getIntent();
+        ArrayList<String> list = intent.getStringArrayListExtra("list");
+        pathList.addAll(list);
+        textView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                //intent.putStringArrayListExtra("list",pathList);
+                Bundle bundle = new Bundle();
+                bundle.putStringArrayList("list",pathList);
+                intent.putExtra("bundle",bundle);
+                setResult(RESULT_OK,intent);
+                finish();
+                overridePendingTransition(android.R.anim.fade_in,android.R.anim.fade_out);
+            }
+        });
+
+        findViewById(R.id.selectPhoto).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (PhotoActivity.this.list.size() > 0) {
+                    listDialogFragment.show(getSupportFragmentManager(), "list");
+                    listDialogFragment.setItem(new ListDialogFragment.Item() {
+                        @Override
+                        public void file(String file) {
+
+                            images.clear();
+                            List<String> list = map.get(file);
+                            for (String path : list) {
+                                Image image;
+                                if(pathList.contains(path)){
+                                    image = new Image(true, path);
+                                }else {
+                                    image = new Image(false, path);
+                                }
+                                images.add(image);
+                            }
+                            adapter.notifyDataSetChanged();
+                        }
+                    });
+                }
+            }
+        });
 
         adapter = new RecyclerAdapter<>(R.layout.item_photo, images, new RecyclerAdapter.BindView<Image>() {
             @Override
@@ -55,6 +105,19 @@ public class PhotoActivity extends AppCompatActivity {
                     @Override
                     public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
                         images.get(position).setCheck(b);
+                        if(b){
+                            if(!pathList.contains(obj.getPath())){
+                                pathList.add(obj.getPath());
+                                textView.setText("已选择"+"("+String.valueOf(pathList.size())+")");
+                            }
+
+
+                        }else {
+                            if(pathList.contains(obj.getPath())){
+                                pathList.remove(obj.getPath());
+                                textView.setText("已选择"+"("+String.valueOf(pathList.size())+")");
+                            }
+                        }
                     }
                 });
 
@@ -131,7 +194,12 @@ public class PhotoActivity extends AppCompatActivity {
                     }
 
                     for (String path : tempList) {
-                        Image image = new Image(false, path);
+                        Image image;
+                        if(pathList.contains(path)){
+                            image = new Image(true, path);
+                        }else {
+                            image = new Image(false, path);
+                        }
                         images.add(image);
                     }
 
@@ -163,32 +231,13 @@ public class PhotoActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-
         getMenuInflater().inflate(R.menu.main, menu);
-
         return super.onCreateOptionsMenu(menu);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.select) {
-            if (list.size() > 0) {
-                listDialogFragment.show(getSupportFragmentManager(), "list");
-                listDialogFragment.setItem(new ListDialogFragment.Item() {
-                    @Override
-                    public void file(String file) {
 
-                        images.clear();
-                        List<String> list = map.get(file);
-                        for (String path : list) {
-                            Image image = new Image(false, path);
-                            images.add(image);
-                        }
-                        adapter.notifyDataSetChanged();
-                    }
-                });
-            }
-        }
         return super.onOptionsItemSelected(item);
     }
 }
