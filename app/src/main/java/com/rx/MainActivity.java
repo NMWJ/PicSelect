@@ -3,6 +3,7 @@ package com.rx;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
@@ -22,11 +23,13 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.rx.adapter.RecyclerAdapter;
+import com.rx.entity.Image;
 import com.rx.fragment.SelectDialogFragment;
 import com.rx.net.MyRetrofit;
 import com.rx.net.ProxyRequestBody;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -50,32 +53,29 @@ import okhttp3.Response;
 public class MainActivity extends AppCompatActivity {
 
     private String[] permissions = {Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA};
-    private ArrayList<String> list = new ArrayList<>();
-    private RecyclerAdapter<String> adapter;
+    private ArrayList<Image> list = new ArrayList<>();
+    private RecyclerAdapter<Image> adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         MyRetrofit.init();
-
         checkPermission();
-
-        final ProgressBar progressBar = findViewById(R.id.progress);
         final TextView textView = findViewById(R.id.text);
         RecyclerView recyclerView = findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new GridLayoutManager(this,3));
-        adapter = new RecyclerAdapter<>(R.layout.item_photo, list, new RecyclerAdapter.BindView<String>() {
+        adapter = new RecyclerAdapter<>(R.layout.item_photo, list, new RecyclerAdapter.BindView<Image>() {
             @Override
-            public void bindView(RecyclerAdapter.ViewHolder holder, final String path, int position) {
-                holder.setImageResources(R.id.image,path);
+            public void bindView(RecyclerAdapter.ViewHolder holder, final Image image, int position) {
+                holder.setImageResources(R.id.image,image.getPath());
                 holder.setVisibility(R.id.checkbox,false);
+                holder.setProgerss(R.id.progress,image.getProgress());
                 holder.setOnItemClick(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
                         Intent intent = new Intent(MainActivity.this, EditPicActivity.class);
-                        intent.putExtra("path", path);
+                        intent.putExtra("path", image.getPath());
                         startActivity(intent);
                     }
                 });
@@ -91,24 +91,22 @@ public class MainActivity extends AppCompatActivity {
 
                 MultipartBody.Builder builder = new MultipartBody.Builder();
                 for(int i=0;i<list.size();i++){
-                    File file = new File(list.get(i));
-
+                    File file = new File(list.get(i).getPath());
                     final int j = i;
-
                     String name = file.getName();
-
                     String type = name.substring(name.lastIndexOf(".") + 1);
-
                     RequestBody requestBody = RequestBody.create(MediaType.parse(type), file);
-
                     ProxyRequestBody proxyRequestBody = new ProxyRequestBody(requestBody, new ProxyRequestBody.UploadListener() {
                         @Override
                         public void onUpload(final double progress) {
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    progressBar.setProgress((int) progress);
-                                    textView.setText("正在上传第"+j+"张图片，已经上传"+(int)progress+"%");
+                                    list.get(j).setProgress((int) progress);
+                                    //progressBar.setProgress((int) progress);
+                                    adapter.notifyItemChanged(j);
+                                    textView.setText("正在上传第"+(j+1)+"张图片，已经上传"+(int)progress+"%");
+
                                 }
                             });
                         }
@@ -116,23 +114,22 @@ public class MainActivity extends AppCompatActivity {
 
                     builder.addFormDataPart("image",file.getName(), proxyRequestBody);
 
-
                 }
 
                 MultipartBody build = builder.build();
                 Request request = new Request.Builder()
                         .post(build)
-                        .url("http://192.168.3.121:8080/Test/uploadServlet")
+                        .url("http://192.168.0.106:8080/HelloWeb/uploadServlet")
                         .build();
 
                 MyRetrofit.getClient().newCall(request).enqueue(new Callback() {
                     @Override
-                    public void onFailure(Call call, IOException e) {
+                    public void onFailure(@NonNull Call call, IOException e) {
 
                     }
 
                     @Override
-                    public void onResponse(Call call, Response response) throws IOException {
+                    public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
 
                        runOnUiThread(new Runnable() {
                            @Override
@@ -143,8 +140,6 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 });
-
-
             }
         });
 
@@ -172,20 +167,17 @@ public class MainActivity extends AppCompatActivity {
                                         }
                                         // Continue only if the File was successfully created
                                         if (photoFile != null) {
-                                            Uri photoURI = FileProvider.getUriForFile(MainActivity.this,
-                                                    "com.example.android.fileprovider",
-                                                    photoFile);
+                                            Uri photoURI = FileProvider.getUriForFile(MainActivity.this, "com.rx.photo", photoFile);
                                             takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
                                             startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
                                         }
                                     }
 
-
                                     break;
                                 case 1:
                                     Intent intent = new Intent(MainActivity.this,PhotoActivity.class);
-                                    intent.putStringArrayListExtra("list",list);
-                                    startActivityForResult(intent,100);
+                                    intent.putParcelableArrayListExtra("list",list);
+                                    startActivityForResult(intent,REQUEST_SELECT_PHOTO);
                                     break;
                             }
                         }
@@ -199,7 +191,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private String mCurrentPhotoPath;
-    static final int REQUEST_TAKE_PHOTO = 1;
+    private static final int REQUEST_TAKE_PHOTO = 101;
+    private static final int REQUEST_SELECT_PHOTO = 100;
 
     private File createImageFile() throws IOException {
         // Create an image file name
@@ -239,16 +232,47 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        if (requestCode == 100 && resultCode == RESULT_OK) {
-            if (data != null) {
+        switch (requestCode) {
+            case REQUEST_TAKE_PHOTO:
 
-                Bundle bundle = data.getBundleExtra("bundle");
-                ArrayList<String> list = bundle.getStringArrayList("list");
-                this.list.clear();
-                this.list.addAll(list);
-                adapter.notifyDataSetChanged();
-            }
+                if(resultCode == RESULT_OK){
+                    this.list.add(new Image(false,mCurrentPhotoPath,0));
+                    Log.e("path",mCurrentPhotoPath);
+                    adapter.notifyDataSetChanged();
+
+
+                    try {
+                        MediaStore.Images.Media.insertImage(getContentResolver(),
+                                mCurrentPhotoPath, mCurrentPhotoPath.substring(mCurrentPhotoPath.lastIndexOf("/")), null);
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                    Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+                    File f = new File(mCurrentPhotoPath);
+                    Uri contentUri = Uri.fromFile(f);
+                    mediaScanIntent.setData(contentUri);
+                    sendBroadcast(mediaScanIntent);
+                }
+
+                break;
+            case REQUEST_SELECT_PHOTO:
+                if(resultCode == RESULT_OK){
+                    if (data != null) {
+
+                        Bundle bundle = data.getBundleExtra("bundle");
+                        ArrayList<String> list = bundle.getStringArrayList("list");
+                        this.list.clear();
+                        if (list != null) for (String path : list) {
+                            this.list.add(new Image(false, path, 0));
+                        }
+                        adapter.notifyDataSetChanged();
+                    }
+                }
+
+                break;
         }
+
+
         super.onActivityResult(requestCode, resultCode, data);
     }
 }

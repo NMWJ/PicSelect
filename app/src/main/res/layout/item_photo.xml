@@ -19,5 +19,11 @@
         android:theme="@style/check"
         app:layout_constraintTop_toTopOf="@+id/image"
         app:layout_constraintEnd_toEndOf="@+id/image" />
+    <ProgressBar
+        android:id="@+id/progress"
+        android:layout_width="match_parent"
+        android:layout_height="10dp"
+        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+        app:layout_constraintBottom_toBottomOf="@+id/image"/>
 
 </android.support.constraint.ConstraintLayout>

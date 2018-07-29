@@ -30,21 +30,13 @@
         app:layout_constraintBottom_toBottomOf="parent"
         android:text="图片上传" />
 
-    <ProgressBar
-        android:id="@+id/progress"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-
-        app:layout_constraintBottom_toTopOf="@+id/putImage"/>
-
     <TextView
         android:id="@+id/text"
         android:layout_width="match_parent"
         android:layout_height="36dp"
         android:gravity="center_vertical"
         android:text="@string/app_name"
-        app:layout_constraintBottom_toTopOf="@+id/progress"
+        app:layout_constraintBottom_toTopOf="@+id/putImage"
         />
 
 </android.support.constraint.ConstraintLayout>

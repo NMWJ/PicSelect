@@ -11,9 +11,11 @@ import android.widget.CompoundButton;
 import android.widget.Filter;
 import android.widget.Filterable;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
+import com.rx.R;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -100,6 +102,11 @@ public class RecyclerAdapter<T> extends RecyclerView.Adapter<RecyclerAdapter.Vie
             }else {
                 view.setVisibility(View.GONE);
             }
+        }
+
+        public void setProgerss(int id,int progress){
+            ProgressBar progressBar = itemView.findViewById(id);
+            progressBar.setProgress(progress);
         }
 
         public void checked(int id, boolean check, CompoundButton.OnCheckedChangeListener clickListener){

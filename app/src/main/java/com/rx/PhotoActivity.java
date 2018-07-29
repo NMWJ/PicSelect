@@ -9,7 +9,6 @@ import android.os.Bundle;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -55,8 +54,11 @@ public class PhotoActivity extends AppCompatActivity {
         final TextView textView = findViewById(R.id.submitPhoto);
 
         final Intent intent = getIntent();
-        ArrayList<String> list = intent.getStringArrayListExtra("list");
-        pathList.addAll(list);
+        ArrayList<Image> list = intent.getParcelableArrayListExtra("list");
+        for (Image image:list){
+            pathList.add(image.getPath());
+        }
+
         textView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -78,7 +80,6 @@ public class PhotoActivity extends AppCompatActivity {
                     listDialogFragment.setItem(new ListDialogFragment.Item() {
                         @Override
                         public void file(String file) {
-
                             images.clear();
                             List<String> list = map.get(file);
                             for (String path : list) {
@@ -101,6 +102,7 @@ public class PhotoActivity extends AppCompatActivity {
             @Override
             public void bindView(RecyclerAdapter.ViewHolder holder, final Image obj, final int position) {
                 holder.setImageResources(R.id.image, obj.getPath());
+                holder.setVisibility(R.id.progress,false);
                 holder.checked(R.id.checkbox, obj.isCheck(), new CompoundButton.OnCheckedChangeListener() {
                     @Override
                     public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
@@ -133,7 +135,6 @@ public class PhotoActivity extends AppCompatActivity {
         });
 
         recyclerView.setAdapter(adapter);
-
         initImages();
     }
 
