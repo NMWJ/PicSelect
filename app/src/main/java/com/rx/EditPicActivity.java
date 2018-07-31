@@ -18,6 +18,5 @@ public class EditPicActivity extends AppCompatActivity {
 
         ImageView imageView = findViewById(R.id.imageView);
         Glide.with(this).load(path).into(imageView);
-
     }
 }

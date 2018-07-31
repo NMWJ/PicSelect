@@ -14,6 +14,8 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
+import com.rx.R;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +27,7 @@ public class RecyclerAdapter<T> extends RecyclerView.Adapter<RecyclerAdapter.Vie
     private BindView<T> bindView;
     private ArrayList<T> tempList;
     private ArrayFilter mFilter;
+
 
     public RecyclerAdapter(int layoutId, List<T> data, BindView<T> bindView) {
         this.layoutId = layoutId;
@@ -90,7 +93,13 @@ public class RecyclerAdapter<T> extends RecyclerView.Adapter<RecyclerAdapter.Vie
 
         public void setImageResources(int id,String path){
             ImageView imageView = itemView.findViewById(id);
-            Glide.with(itemView).load(path).into(imageView);
+            RequestOptions options = new RequestOptions()
+                    .optionalCenterInside()
+                    .placeholder(R.drawable.ic_android_black_24dp)
+                    .error(R.drawable.ic_broken_image_black_24dp)
+                    .override(200, 200);
+
+            Glide.with(itemView).load(path).apply(options).into(imageView);
         }
 
         public void setVisibility(int id,boolean isVisibility){

@@ -59,6 +59,8 @@ public class PhotoActivity extends AppCompatActivity {
             pathList.add(image.getPath());
         }
 
+        textView.setText("已选择"+"("+String.valueOf(pathList.size())+")");
+
         textView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {

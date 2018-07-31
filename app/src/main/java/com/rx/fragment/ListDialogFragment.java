@@ -35,7 +35,6 @@ public class ListDialogFragment extends DialogFragment {
 
         if(arguments!=null){
             ArrayList<String> list = arguments.getStringArrayList("list");
-
             RecyclerView recyclerView = view.findViewById(R.id.recyclerView);
             recyclerView.setItemAnimator(new DefaultItemAnimator());
             recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
@@ -72,7 +71,7 @@ public class ListDialogFragment extends DialogFragment {
         if(window!=null){
             window.setBackgroundDrawable(new ColorDrawable(Color.WHITE));
             WindowManager.LayoutParams attributes = window.getAttributes();
-            attributes.gravity = Gravity.BOTTOM;
+            attributes.gravity = Gravity.CENTER;
             window.setAttributes(attributes);
         }
     }

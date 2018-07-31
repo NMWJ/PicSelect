@@ -18,7 +18,7 @@
 
     <TextView
         android:id="@+id/selectPhoto"
-        android:layout_width="150dp"
+        android:layout_width="128dp"
         android:layout_height="50dp"
         android:text="选择相册"
         app:layout_constraintStart_toStartOf="parent"
@@ -30,7 +30,7 @@
 
     <TextView
         android:id="@+id/submitPhoto"
-        android:layout_width="96dp"
+        android:layout_width="128dp"
         android:layout_height="50dp"
         android:text="已选择(0)"
         app:layout_constraintEnd_toEndOf="parent"

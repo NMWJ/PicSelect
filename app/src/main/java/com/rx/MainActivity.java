@@ -93,7 +93,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
 
-
                 for(int i=0;i<list.size();i++){
                     final int j = i;
                     final File file = new File(list.get(i).getPath());
