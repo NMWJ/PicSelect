@@ -1,4 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<paths>
-    <external-path name="my_images" path="Android/data/com.rx/files/Pictures/" />
-</paths>
+<!--<paths>-->
+    <!--&lt;!&ndash;<external-path name="my_images" path="Android/data/com.rx/files/Pictures/" />&ndash;&gt;-->
+    <!--<external-path name="external_storage_root" path="."/>-->
+    <!--<files-path name="files" path="."/>-->
+    <!--<root-path path="" name="camera_photos" />-->
+<!--</paths>-->
+<resources>
+    <paths>
+        <root-path path="" name="camera_photos" />
+        <!--<external-path path="my_images" name="images/" />-->
+    </paths>
+</resources>

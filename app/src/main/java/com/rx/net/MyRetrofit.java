@@ -17,6 +17,7 @@ public class MyRetrofit {
         client = new OkHttpClient.Builder()
                 .connectTimeout(10, TimeUnit.SECONDS)
                 .readTimeout(10,TimeUnit.SECONDS)
+//                .addInterceptor(new GzipRequestInterceptor())
                 .build();
 
     }

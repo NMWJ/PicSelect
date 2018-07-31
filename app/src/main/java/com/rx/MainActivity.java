@@ -16,6 +16,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SimpleItemAnimator;
 import android.util.Log;
 import android.view.View;
 import android.widget.ProgressBar;
@@ -43,6 +44,7 @@ import okhttp3.MultipartBody;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 /**
  * retrofit file download
@@ -83,19 +85,25 @@ public class MainActivity extends AppCompatActivity {
         });
 
         recyclerView.setAdapter(adapter);
+        RecyclerView.ItemAnimator itemAnimator = recyclerView.getItemAnimator();
+        if(itemAnimator!=null) ((SimpleItemAnimator) itemAnimator).setSupportsChangeAnimations(false);
 
         //上传文件
         findViewById(R.id.putImage).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
 
-                MultipartBody.Builder builder = new MultipartBody.Builder();
+
                 for(int i=0;i<list.size();i++){
-                    File file = new File(list.get(i).getPath());
                     final int j = i;
-                    String name = file.getName();
+                    final File file = new File(list.get(i).getPath());
+
+                    final String name = file.getName();
                     String type = name.substring(name.lastIndexOf(".") + 1);
-                    RequestBody requestBody = RequestBody.create(MediaType.parse(type), file);
+                    final RequestBody requestBody = RequestBody.create(MediaType.parse(type), file);
+
+                    MultipartBody.Builder builder = new MultipartBody.Builder();
+                    builder.addFormDataPart("dis","这是一组图片");
                     ProxyRequestBody proxyRequestBody = new ProxyRequestBody(requestBody, new ProxyRequestBody.UploadListener() {
                         @Override
                         public void onUpload(final double progress) {
@@ -112,34 +120,40 @@ public class MainActivity extends AppCompatActivity {
                         }
                     });
 
-                    builder.addFormDataPart("image",file.getName(), proxyRequestBody);
+//                    builder.addFormDataPart("image",file.getName(), proxyRequestBody);
 
+                    RequestBody req = builder
+                            .setType(MultipartBody.ALTERNATIVE)
+                            .addFormDataPart("detail_image",file.getName(),proxyRequestBody)
+                            .build();
+
+//                    MultipartBody build = builder.build();
+                    final Request request = new Request.Builder()
+                            .post(req)
+                            .url("http://192.168.3.121:8080/Test/uploadServlet")
+                            .build();
+
+                    MyRetrofit.getClient().newCall(request).enqueue(new Callback() {
+                        @Override
+                        public void onFailure(@NonNull Call call, IOException e) {
+
+                        }
+
+                        @Override
+                        public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+
+                            if(response.code()==200){
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Toast.makeText(MainActivity.this,"Success",Toast.LENGTH_SHORT).show();
+                                    }
+                                });
+                            }
+
+                        }
+                    });
                 }
-
-                MultipartBody build = builder.build();
-                Request request = new Request.Builder()
-                        .post(build)
-                        .url("http://192.168.0.106:8080/HelloWeb/uploadServlet")
-                        .build();
-
-                MyRetrofit.getClient().newCall(request).enqueue(new Callback() {
-                    @Override
-                    public void onFailure(@NonNull Call call, IOException e) {
-
-                    }
-
-                    @Override
-                    public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
-
-                       runOnUiThread(new Runnable() {
-                           @Override
-                           public void run() {
-                               Toast.makeText(MainActivity.this,"Success",Toast.LENGTH_SHORT).show();
-                           }
-                       });
-
-                    }
-                });
             }
         });
 
@@ -195,10 +209,27 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_SELECT_PHOTO = 100;
 
     private File createImageFile() throws IOException {
+
+//        String timeStamp = new SimpleDateFormat(PATTERN, Locale.CHINA).format(new Date());
+//
+//        String externalStorageState = Environment.getExternalStorageState();
+//
+//        File dir = new File(Environment.getExternalStorageDirectory() + filePath);
+//
+//        if (externalStorageState.equals(Environment.MEDIA_MOUNTED)) {
+//            if (!dir.exists()) {
+//                dir.mkdirs();
+//            }
+//            return new File(dir, timeStamp + ".jpg");
+//        } else {
+//            File cacheDir = context.getCacheDir();
+//            return new File(cacheDir, timeStamp + ".jpg");
+//        }
+//
         // Create an image file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.CHINA).format(new Date());
         String imageFileName = "JPEG_" + timeStamp + "_";
-        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File storageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
         File image = File.createTempFile(
                 imageFileName,  /* prefix */
                 ".jpg",         /* suffix */
@@ -237,16 +268,9 @@ public class MainActivity extends AppCompatActivity {
 
                 if(resultCode == RESULT_OK){
                     this.list.add(new Image(false,mCurrentPhotoPath,0));
-                    Log.e("path",mCurrentPhotoPath);
                     adapter.notifyDataSetChanged();
 
-
-                    try {
-                        MediaStore.Images.Media.insertImage(getContentResolver(),
-                                mCurrentPhotoPath, mCurrentPhotoPath.substring(mCurrentPhotoPath.lastIndexOf("/")), null);
-                    } catch (FileNotFoundException e) {
-                        e.printStackTrace();
-                    }
+                    //发布到系统相册
                     Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
                     File f = new File(mCurrentPhotoPath);
                     Uri contentUri = Uri.fromFile(f);
