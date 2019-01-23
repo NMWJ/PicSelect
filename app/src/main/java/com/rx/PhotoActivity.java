@@ -105,25 +105,27 @@ public class PhotoActivity extends AppCompatActivity {
             public void bindView(RecyclerAdapter.ViewHolder holder, final Image obj, final int position) {
                 holder.setImageResources(R.id.image, obj.getPath());
                 holder.setVisibility(R.id.progress,false);
-                holder.checked(R.id.checkbox, obj.isCheck(), new CompoundButton.OnCheckedChangeListener() {
-                    @Override
-                    public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                        images.get(position).setCheck(b);
-                        if(b){
-                            if(!pathList.contains(obj.getPath())){
-                                pathList.add(obj.getPath());
-                                textView.setText("已选择"+"("+String.valueOf(pathList.size())+")");
-                            }
 
+                if(pathList.size()<5){
+                    holder.checked(R.id.checkbox, obj.isCheck(), new CompoundButton.OnCheckedChangeListener() {
+                        @Override
+                        public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                            images.get(position).setCheck(b);
+                            if(b){
+                                if(!pathList.contains(obj.getPath())){
+                                    pathList.add(obj.getPath());
+                                    textView.setText("已选择"+"("+String.valueOf(pathList.size())+")");
+                                }
 
-                        }else {
-                            if(pathList.contains(obj.getPath())){
-                                pathList.remove(obj.getPath());
-                                textView.setText("已选择"+"("+String.valueOf(pathList.size())+")");
+                            }else {
+                                if(pathList.contains(obj.getPath())){
+                                    pathList.remove(obj.getPath());
+                                    textView.setText("已选择"+"("+String.valueOf(pathList.size())+")");
+                                }
                             }
                         }
-                    }
-                });
+                    });
+                }
 
                 holder.setOnItemClick(new View.OnClickListener() {
                     @Override

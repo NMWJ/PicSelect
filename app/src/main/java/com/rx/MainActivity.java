@@ -3,8 +3,8 @@ package com.rx;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
@@ -13,13 +13,10 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SimpleItemAnimator;
-import android.util.Log;
 import android.view.View;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -30,11 +27,11 @@ import com.rx.net.MyRetrofit;
 import com.rx.net.ProxyRequestBody;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 import okhttp3.Call;
@@ -44,7 +41,6 @@ import okhttp3.MultipartBody;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import okhttp3.ResponseBody;
 
 /**
  * retrofit file download
@@ -57,6 +53,9 @@ public class MainActivity extends AppCompatActivity {
     private String[] permissions = {Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA};
     private ArrayList<Image> list = new ArrayList<>();
     private RecyclerAdapter<Image> adapter;
+    private String mCurrentPhotoPath;
+    private static final int REQUEST_TAKE_PHOTO = 101;
+    private static final int REQUEST_SELECT_PHOTO = 100;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
             public void bindView(RecyclerAdapter.ViewHolder holder, final Image image, int position) {
                 holder.setImageResources(R.id.image,image.getPath());
                 holder.setVisibility(R.id.checkbox,false);
-                holder.setProgerss(R.id.progress,image.getProgress());
+                holder.setProgress(R.id.progress,image.getProgress());
                 holder.setOnItemClick(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
@@ -88,11 +87,13 @@ public class MainActivity extends AppCompatActivity {
         RecyclerView.ItemAnimator itemAnimator = recyclerView.getItemAnimator();
         if(itemAnimator!=null) ((SimpleItemAnimator) itemAnimator).setSupportsChangeAnimations(false);
 
+
         //上传文件
         findViewById(R.id.putImage).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
+                MultipartBody.Builder builder = new MultipartBody.Builder().setType(MultipartBody.ALTERNATIVE);
+                boolean tag = false;
                 for(int i=0;i<list.size();i++){
                     final int j = i;
                     final File file = new File(list.get(i).getPath());
@@ -100,8 +101,6 @@ public class MainActivity extends AppCompatActivity {
                     final String name = file.getName();
                     String type = name.substring(name.lastIndexOf(".") + 1);
                     final RequestBody requestBody = RequestBody.create(MediaType.parse(type), file);
-
-                    MultipartBody.Builder builder = new MultipartBody.Builder();
                     builder.addFormDataPart("dis","这是一组图片");
                     ProxyRequestBody proxyRequestBody = new ProxyRequestBody(requestBody, new ProxyRequestBody.UploadListener() {
                         @Override
@@ -119,19 +118,17 @@ public class MainActivity extends AppCompatActivity {
                         }
                     });
 
-//                    builder.addFormDataPart("image",file.getName(), proxyRequestBody);
+                    builder.addFormDataPart("detail_image",file.getName(),proxyRequestBody);
+                    tag = true;
 
-                    RequestBody req = builder
-                            .setType(MultipartBody.ALTERNATIVE)
-                            .addFormDataPart("detail_image",file.getName(),proxyRequestBody)
-                            .build();
+                }
 
-//                    MultipartBody build = builder.build();
-                    final Request request = new Request.Builder()
-                            .post(req)
+                if(tag){
+
+                    Request request = new Request.Builder()
+                            .post(builder.build())
                             .url("http://192.168.3.121:8080/Test/uploadServlet")
                             .build();
-
                     MyRetrofit.getClient().newCall(request).enqueue(new Callback() {
                         @Override
                         public void onFailure(@NonNull Call call, IOException e) {
@@ -149,9 +146,10 @@ public class MainActivity extends AppCompatActivity {
                                     }
                                 });
                             }
-
                         }
                     });
+                }else {
+                    Toast.makeText(MainActivity.this,"你未选择任何图片",Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -169,15 +167,14 @@ public class MainActivity extends AppCompatActivity {
                             switch (type){
                                 case 0:
                                     Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                                    // Ensure that there's a camera activity to handle the intent
                                     if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
-                                        // Create the File where the photo should go
                                         File photoFile = null;
                                         try {
                                             photoFile = createImageFile();
-                                        } catch (IOException ex) {
-                                            // Error occurred while creating the File
+                                        } catch (IOException e) {
+                                            e.printStackTrace();
                                         }
+
                                         // Continue only if the File was successfully created
                                         if (photoFile != null) {
                                             Uri photoURI = FileProvider.getUriForFile(MainActivity.this, "com.rx.photo", photoFile);
@@ -203,28 +200,8 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private String mCurrentPhotoPath;
-    private static final int REQUEST_TAKE_PHOTO = 101;
-    private static final int REQUEST_SELECT_PHOTO = 100;
-
     private File createImageFile() throws IOException {
 
-//        String timeStamp = new SimpleDateFormat(PATTERN, Locale.CHINA).format(new Date());
-//
-//        String externalStorageState = Environment.getExternalStorageState();
-//
-//        File dir = new File(Environment.getExternalStorageDirectory() + filePath);
-//
-//        if (externalStorageState.equals(Environment.MEDIA_MOUNTED)) {
-//            if (!dir.exists()) {
-//                dir.mkdirs();
-//            }
-//            return new File(dir, timeStamp + ".jpg");
-//        } else {
-//            File cacheDir = context.getCacheDir();
-//            return new File(cacheDir, timeStamp + ".jpg");
-//        }
-//
         // Create an image file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.CHINA).format(new Date());
         String imageFileName = "JPEG_" + timeStamp + "_";
@@ -235,7 +212,6 @@ public class MainActivity extends AppCompatActivity {
                 storageDir      /* directory */
         );
 
-        // Save a file: path for use with ACTION_VIEW intents
         mCurrentPhotoPath = image.getAbsolutePath();
         return image;
     }

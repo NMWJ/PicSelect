@@ -80,7 +80,7 @@ public class RecyclerAdapter<T> extends RecyclerView.Adapter<RecyclerAdapter.Vie
 
         public void setText(int id,CharSequence sequence){
             TextView textView = itemView.findViewById(id);
-            textView.setText(sequence);
+            if(textView!=null) textView.setText(sequence);
         }
 
         public void setChildViewOnClick(int id, View.OnClickListener onClickListener){
@@ -99,11 +99,13 @@ public class RecyclerAdapter<T> extends RecyclerView.Adapter<RecyclerAdapter.Vie
                     .error(R.drawable.ic_broken_image_black_24dp)
                     .override(200, 200);
 
-            Glide.with(itemView).load(path).apply(options).into(imageView);
+            if(imageView !=null)
+                Glide.with(itemView).load(path).apply(options).into(imageView);
         }
 
         public void setVisibility(int id,boolean isVisibility){
             View view = itemView.findViewById(id);
+            if(view!=null)
             if(isVisibility){
                 view.setVisibility(View.VISIBLE);
             }else {
@@ -111,16 +113,19 @@ public class RecyclerAdapter<T> extends RecyclerView.Adapter<RecyclerAdapter.Vie
             }
         }
 
-        public void setProgerss(int id,int progress){
+        public void setProgress(int id,int progress){
             ProgressBar progressBar = itemView.findViewById(id);
-            progressBar.setProgress(progress);
+            if(progressBar!=null) progressBar.setProgress(progress);
         }
 
         public void checked(int id, boolean check, CompoundButton.OnCheckedChangeListener clickListener){
             CheckBox checkBox = itemView.findViewById(id);
-            checkBox.setOnCheckedChangeListener(clickListener);
-            checkBox.setChecked(check);
+            if(checkBox!=null){
+                checkBox.setOnCheckedChangeListener(clickListener);
+                checkBox.setChecked(check);
+            }
         }
+
 
     }
 
